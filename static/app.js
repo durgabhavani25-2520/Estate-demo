@@ -2,7 +2,8 @@
 
 const FAVORITES_KEY = "estatebridge-favourites-v1";
 const TEAM_KEY = "estatebridge-team-session-v1";
-const state = { purpose: "", propertyType: "", listings: [], currentListing: null, aiEnabled: false, adminEnabled: false, teamToken: sessionStorage.getItem(TEAM_KEY) || "", role: "", username: "" };
+const BACKEND_UNAVAILABLE_MESSAGE = "This Netlify preview is static-only. Listings, search, enquiries, and team sign-in need the Python backend.";
+const state = { purpose: "", propertyType: "", listings: [], currentListing: null, backendAvailable: null, aiEnabled: false, adminEnabled: false, teamToken: sessionStorage.getItem(TEAM_KEY) || "", role: "", username: "" };
 const byId = (id) => document.getElementById(id);
 const listingGrid = byId("listing-grid");
 
@@ -130,6 +131,17 @@ function currentFilterParams() {
 }
 
 async function loadListings() {
+  if (state.backendAvailable === null) return;
+  if (state.backendAvailable === false) {
+    listingGrid.textContent = "";
+    byId("count-all").textContent = "0";
+    byId("result-count").textContent = "Listings unavailable in this static preview.";
+    byId("empty-results").hidden = false;
+    byId("empty-results").querySelector("h3").textContent = "Backend unavailable";
+    byId("empty-results").querySelector("p").textContent = BACKEND_UNAVAILABLE_MESSAGE;
+    byId("empty-clear").hidden = true;
+    return;
+  }
   byId("result-count").textContent = "Finding properties…";
   try {
     const response = await fetch("/api/listings?" + currentFilterParams().toString(), { cache: "no-store" });
@@ -273,6 +285,10 @@ function applyIntent(filters) {
 
 byId("natural-search").addEventListener("submit", async function (event) {
   event.preventDefault();
+  if (state.backendAvailable !== true) {
+    byId("search-feedback").textContent = state.backendAvailable === false ? BACKEND_UNAVAILABLE_MESSAGE : "Checking the app server. Please try again in a moment.";
+    return;
+  }
   const query = byId("natural-query").value.trim();
   if (!query) { byId("natural-query").focus(); return; }
   const feedback = byId("search-feedback");
@@ -300,12 +316,23 @@ document.querySelectorAll(".category-tab").forEach((button) => button.addEventLi
 document.querySelectorAll("[data-nav-purpose]").forEach((link) => link.addEventListener("click", function () { state.purpose = link.dataset.navPurpose; state.propertyType = ""; byId("filter-type").value = ""; document.querySelectorAll(".category-tab").forEach((tab) => tab.classList.toggle("active", (tab.dataset.purpose || "") === state.purpose && !tab.dataset.type)); loadListings(); }));
 document.querySelectorAll("[data-nav-type]").forEach((link) => link.addEventListener("click", function () { state.purpose = ""; state.propertyType = link.dataset.navType; byId("filter-type").value = state.propertyType; document.querySelectorAll(".category-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.type === state.propertyType)); loadListings(); }));
 
-function openSellerForm() { byId("seller-message").textContent = ""; byId("seller-dialog").showModal(); }
+function openSellerForm() {
+  if (state.backendAvailable !== true) {
+    byId("search-feedback").textContent = state.backendAvailable === false ? BACKEND_UNAVAILABLE_MESSAGE : "Checking the app server. Please try again in a moment.";
+    return;
+  }
+  byId("seller-message").textContent = "";
+  byId("seller-dialog").showModal();
+}
 byId("sell-open").addEventListener("click", openSellerForm);
 byId("sell-banner-open").addEventListener("click", openSellerForm);
 
 async function submitLead(form, messageId, basePayload) {
   const message = byId(messageId);
+  if (state.backendAvailable !== true) {
+    message.textContent = state.backendAvailable === false ? BACKEND_UNAVAILABLE_MESSAGE : "Checking the app server. Please try again in a moment.";
+    return;
+  }
   message.textContent = "Sending enquiry…";
   const submit = form.querySelector('button[type="submit"]');
   if (submit) submit.disabled = true;
@@ -743,7 +770,9 @@ setupDialogClosers();
 async function initialize() {
   try {
     const response = await fetch("/api/config", { cache: "no-store" });
+    if (!response.ok) throw new Error(BACKEND_UNAVAILABLE_MESSAGE);
     const config = await response.json();
+    state.backendAvailable = true;
     state.aiEnabled = Boolean(config.ai_enabled);
     state.adminEnabled = Boolean(config.admin_enabled);
     byId("admin-setup-note").hidden = state.adminEnabled;
@@ -752,7 +781,10 @@ async function initialize() {
     if (state.aiEnabled) byId("search-feedback").textContent = "AI search is ready. Describe the kind of home or land you want.";
     else byId("search-feedback").textContent = "Search with everyday words. AI filter extraction is optional; this demo also works without an API key.";
   } catch (error) {
-    byId("search-feedback").textContent = "The local app server is unavailable. Start server.py to browse the demo.";
+    state.backendAvailable = false;
+    byId("admin-open").hidden = true;
+    byId("admin-footer-open").hidden = true;
+    byId("search-feedback").textContent = BACKEND_UNAVAILABLE_MESSAGE;
   }
   await loadListings();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
