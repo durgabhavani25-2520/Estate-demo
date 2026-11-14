@@ -23,15 +23,15 @@ For a container host:
 
 ## Render
 
-The root `render.yaml` defines a Docker web service for the `estate` branch, generates a private admin token, and mounts a 1 GB persistent disk at `/app/instance`.
+The root `render.yaml` defines a free Docker web service for the `estate` branch and generates a private admin token. It has no persistent disk: the local SQLite database, leads, and admin changes can be lost whenever the service sleeps, restarts, or redeploys. Render Free services also spin down after 15 minutes without traffic, so the first request after idle may take about a minute. Use this setup for demos only, not for real enquiries or production data.
 
-1. In Render, create a **Blueprint** from this GitHub repository and review the plan and disk charges before applying it. A persistent disk requires a paid web service.
+1. In Render, create a **Blueprint** from this GitHub repository and choose the `estate` branch.
 2. After the first successful deploy, copy the service's public `onrender.com` URL.
 3. Add that URL as the destination for `/api/*` in `netlify.toml`, then push the change. Netlify can then proxy API calls to the Python backend.
 
 ## Netlify static preview
 
-The included `netlify.toml` publishes the `static/` directory so Netlify can serve the frontend. Until the Render URL is added as an `/api/*` redirect, this is a static preview: listings, enquiries, AI search, and team features that call `/api/*` will not work.
+The included `netlify.toml` publishes the `static/` directory so Netlify can serve the frontend. Until the Render URL is added as an `/api/*` redirect, this is a static preview: listings, enquiries, AI search, and team features that call `/api/*` will not work. For durable data, use a paid backend with persistent storage instead of the free demo.
 
 ## Production work still required
 

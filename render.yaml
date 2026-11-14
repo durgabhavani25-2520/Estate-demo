@@ -2,7 +2,7 @@ services:
   - type: web
     name: estatebridge-api
     runtime: docker
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
     branch: estate
     autoDeployTrigger: commit
@@ -16,7 +16,3 @@ services:
         value: admin
       - key: ADMIN_ACCESS_TOKEN
         generateValue: true
-    disk:
-      name: estatebridge-data
-      mountPath: /app/instance
-      sizeGB: 1
