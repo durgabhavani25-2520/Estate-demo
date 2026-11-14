@@ -21,6 +21,10 @@ For a container host:
 5. Mount persistent storage at `/app/instance`; otherwise leads and database changes may be lost when a container is replaced.
 6. Put the app behind HTTPS and set a custom domain at the host.
 
+## Netlify static preview
+
+The included `netlify.toml` publishes the `static/` directory so Netlify can serve the frontend. This is a static preview only: the Python API is not deployed, so listings, enquiries, AI search, and team features that call `/api/*` will not work. The full app requires the Python server and persistent storage on a Docker-capable host.
+
 ## Production work still required
 
 - SQLite is appropriate for a small single-container MVP. Use PostgreSQL for multiple instances, higher concurrency, managed backups, and operations that need a durable shared database.
