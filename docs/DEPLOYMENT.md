@@ -31,7 +31,7 @@ The root `render.yaml` defines a free Docker web service for the `estate` branch
 
 ## Netlify static preview
 
-The included `netlify.toml` publishes the `static/` directory so Netlify can serve the frontend. Until the Render URL is added as an `/api/*` redirect, this is a static preview: listings, enquiries, AI search, and team features that call `/api/*` will not work. For durable data, use a paid backend with persistent storage instead of the free demo.
+The included `netlify.toml` publishes the `static/` directory and proxies `/api/*` requests to the Render service. With both deployments live, the Netlify frontend can use the Python API. The free Render service has no persistent disk, so local SQLite data may reset when it sleeps, restarts, or redeploys; use a paid backend with persistent storage before collecting real enquiries.
 
 ## Production work still required
 
