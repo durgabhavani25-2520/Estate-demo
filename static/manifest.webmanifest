@@ -1,0 +1,11 @@
+{
+  "name": "EstateBridge Property Marketplace",
+  "short_name": "EstateBridge",
+  "description": "Explore homes, resale properties, and land across India.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#18333b",
+  "icons": [{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
