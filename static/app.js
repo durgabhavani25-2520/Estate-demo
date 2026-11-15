@@ -3,7 +3,8 @@
 const FAVORITES_KEY = "estatebridge-favourites-v1";
 const TEAM_KEY = "estatebridge-team-session-v1";
 const BACKEND_UNAVAILABLE_MESSAGE = "This Netlify preview is static-only. Listings, search, enquiries, and team sign-in need the Python backend.";
-const state = { purpose: "", propertyType: "", listings: [], currentListing: null, backendAvailable: null, aiEnabled: false, adminEnabled: false, teamToken: sessionStorage.getItem(TEAM_KEY) || "", role: "", username: "" };
+const CUSTOMER_AUTH_UNAVAILABLE_MESSAGE = "Customer phone verification is not configured. Integrate an SMS OTP provider before using customer login or registration.";
+const state = { purpose: "buy", browseMode: "buy", propertyType: "", listings: [], currentListing: null, backendAvailable: null, aiEnabled: false, adminEnabled: false, customerAuthEnabled: false, customerAuthMessage: CUSTOMER_AUTH_UNAVAILABLE_MESSAGE, teamToken: sessionStorage.getItem(TEAM_KEY) || "", role: "", username: "" };
 const byId = (id) => document.getElementById(id);
 const listingGrid = byId("listing-grid");
 
@@ -113,9 +114,72 @@ function renderListings(items) {
   items.forEach((item) => listingGrid.appendChild(buildPropertyCard(item)));
 }
 
+function renderProjects(items) {
+  const host = byId("project-grid");
+  host.textContent = "";
+  const projects = new Map();
+  items.forEach((item) => {
+    if (!item.venture_name) return;
+    if (!projects.has(item.venture_name)) projects.set(item.venture_name, []);
+    projects.get(item.venture_name).push(item);
+  });
+  if (!projects.size) {
+    host.appendChild(el("p", "project-loading", "No project-linked sample homes yet. Add a project name to a listing in the team workspace."));
+    return;
+  }
+  projects.forEach((listings, name) => {
+    const item = listings[0];
+    const card = el("article", "project-card");
+    const image = document.createElement("img");
+    image.src = (item.image_urls || [])[0] || "/icon.svg";
+    image.alt = name + " sample project";
+    image.loading = "lazy";
+    image.addEventListener("error", function () { image.src = "/icon.svg"; image.classList.add("image-fallback"); }, { once: true });
+    card.appendChild(image);
+    const details = el("div", "project-card-content");
+    details.appendChild(el("span", "project-label", "FEATURED PROJECT · SAMPLE"));
+    details.appendChild(el("h3", "", name));
+    details.appendChild(el("p", "", item.locality + ", " + item.city));
+    details.appendChild(el("p", "project-count", listings.length + (listings.length === 1 ? " sample home" : " sample homes")));
+    const button = el("button", "card-view", "Explore project →");
+    button.type = "button";
+    button.addEventListener("click", function () {
+      applyBrowseMode("projects");
+      byId("filter-city").value = item.city;
+      byId("filter-locality").value = item.locality;
+      byId("quick-city").value = item.city;
+      byId("quick-locality").value = item.locality;
+      loadListings();
+      byId("discover").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    details.appendChild(button);
+    card.appendChild(details);
+    host.appendChild(card);
+  });
+}
+
+async function loadProjects() {
+  const host = byId("project-grid");
+  if (state.backendAvailable !== true) {
+    host.textContent = BACKEND_UNAVAILABLE_MESSAGE;
+    return;
+  }
+  try {
+    const response = await fetch("/api/listings?city=Hyderabad&projects=1", { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Projects could not be loaded.");
+    renderProjects(data.listings || []);
+  } catch (error) {
+    host.textContent = error.message || "Projects could not be loaded.";
+  }
+}
+
 function currentFilterParams() {
   const params = new URLSearchParams();
   if (state.purpose) params.set("purpose", state.purpose);
+  if (state.browseMode === "new-launch") params.set("new_launch", "1");
+  if (state.browseMode === "projects") params.set("projects", "1");
+  if ((state.browseMode === "buy" || state.browseMode === "new-launch") && !state.propertyType) params.set("residential", "1");
   if (state.propertyType) params.set("property_type", state.propertyType);
   const city = byId("filter-city").value;
   const locality = byId("filter-locality").value.trim();
@@ -224,6 +288,30 @@ function setupDialogClosers() {
   }));
 }
 
+function updateEmiEstimate() {
+  const principal = Number(byId("emi-principal").value);
+  const annualRate = Number(byId("emi-rate").value);
+  const months = Number(byId("emi-years").value) * 12;
+  if (!Number.isFinite(principal) || principal <= 0 || !Number.isFinite(annualRate) || annualRate < 0 || !Number.isFinite(months) || months <= 0) return;
+  const monthlyRate = annualRate / 1200;
+  const factor = Math.pow(1 + monthlyRate, months);
+  const payment = monthlyRate === 0 ? principal / months : principal * monthlyRate * factor / (factor - 1);
+  const totalPayment = payment * months;
+  const formatRupees = (value) => "₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(value));
+  byId("emi-value").textContent = formatRupees(payment);
+  byId("emi-total").textContent = "Approx. total repayment " + formatRupees(totalPayment) + " · interest " + formatRupees(totalPayment - principal);
+}
+
+byId("emi-open").addEventListener("click", function () {
+  updateEmiEstimate();
+  byId("emi-dialog").showModal();
+});
+byId("emi-form").addEventListener("submit", function (event) {
+  event.preventDefault();
+  updateEmiEstimate();
+});
+byId("emi-form").addEventListener("input", updateEmiEstimate);
+
 function showInfo(title, copy, kicker) {
   byId("info-title").textContent = title;
   byId("info-kicker").textContent = kicker;
@@ -234,31 +322,53 @@ function showInfo(title, copy, kicker) {
 }
 
 function clearAllFilters() {
-  state.purpose = "";
-  state.propertyType = "";
-  byId("filter-city").value = "";
+  applyBrowseMode("buy");
+  byId("filter-city").value = "Hyderabad";
   byId("filter-type").value = "";
   byId("filter-locality").value = "";
   byId("filter-budget").value = "";
   byId("filter-beds").value = "0";
   byId("filter-sort").value = "featured";
-  document.querySelectorAll(".category-tab").forEach((button, index) => button.classList.toggle("active", index === 0));
+  byId("header-city").value = "Hyderabad";
+  byId("quick-city").value = "Hyderabad";
+  byId("quick-locality").value = "";
+  byId("quick-type").value = "";
+  byId("quick-budget").value = "";
+  byId("quick-beds").value = "0";
   loadListings();
 }
 
-function activateCategory(button) {
-  state.purpose = button.dataset.purpose || "";
-  state.propertyType = button.dataset.type || "";
-  document.querySelectorAll(".category-tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+function updateSearchMode() {
+  document.querySelectorAll("[data-browse-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.browseMode === state.browseMode);
+  });
+}
+
+function applyBrowseMode(mode) {
+  state.browseMode = mode;
+  state.propertyType = "";
+  if (mode === "rent") state.purpose = "rent";
+  else if (mode === "new-launch") state.purpose = "sale";
+  else if (mode === "resale") state.purpose = "resale";
+  else {
+    state.purpose = "buy";
+    if (mode === "commercial") state.propertyType = "commercial";
+    if (mode === "plots") state.propertyType = "plot";
+  }
   byId("filter-type").value = state.propertyType;
+  byId("quick-type").value = state.propertyType;
+  updateSearchMode();
+}
+
+function activateCategory(button) {
+  applyBrowseMode(button.dataset.browseMode);
   loadListings();
   byId("discover").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function applyIntent(filters) {
-  state.purpose = "";
-  state.propertyType = "";
-  byId("filter-city").value = "";
+  applyBrowseMode("buy");
+  byId("filter-city").value = "Hyderabad";
   byId("filter-locality").value = "";
   byId("filter-budget").value = "";
   byId("filter-beds").value = "0";
@@ -268,20 +378,71 @@ function applyIntent(filters) {
     city.includes("hyderabad") ? "Hyderabad" : city.includes("mumbai") || city.includes("bombay") ? "Mumbai" :
     city.includes("pune") ? "Pune" : city.includes("chennai") || city.includes("madras") ? "Chennai" : city.includes("delhi") || city.includes("gurgaon") || city.includes("noida") ? "Delhi NCR" : "";
   if (canonicalCity) byId("filter-city").value = canonicalCity;
+  byId("header-city").value = byId("filter-city").value;
   if (filters.locality) byId("filter-locality").value = filters.locality;
   if (filters.property_type && filters.property_type !== "any") {
-    state.propertyType = filters.property_type;
-    byId("filter-type").value = filters.property_type;
+    if (filters.property_type === "commercial") applyBrowseMode("commercial");
+    else if (filters.property_type === "plot") applyBrowseMode("plots");
+    else {
+      state.propertyType = filters.property_type;
+      byId("filter-type").value = filters.property_type;
+    }
   }
-  if (filters.purpose && filters.purpose !== "any") state.purpose = filters.purpose;
+  if (filters.purpose && filters.purpose !== "any") {
+    if (filters.purpose === "rent") applyBrowseMode("rent");
+    else if (filters.purpose === "resale") applyBrowseMode("resale");
+    else if (filters.purpose === "sale") state.purpose = "sale";
+  }
+  updateSearchMode();
   if (filters.budget_max_inr > 0) byId("filter-budget").value = String(filters.budget_max_inr);
   if (filters.bedrooms_min > 0) byId("filter-beds").value = String(filters.bedrooms_min);
-  document.querySelectorAll(".category-tab").forEach((button) => {
-    const active = (button.dataset.purpose || "") === state.purpose && (button.dataset.type || "") === state.propertyType;
-    button.classList.toggle("active", active);
-  });
-  if (!document.querySelector(".category-tab.active")) document.querySelectorAll(".category-tab")[0].classList.add("active");
+  byId("quick-city").value = byId("filter-city").value;
+  byId("quick-locality").value = byId("filter-locality").value;
+  byId("quick-type").value = byId("filter-type").value;
+  byId("quick-budget").value = byId("filter-budget").value;
+  byId("quick-beds").value = byId("filter-beds").value;
 }
+
+document.querySelectorAll(".quick-search-tab").forEach((button) => button.addEventListener("click", function () {
+  applyBrowseMode(button.dataset.browseMode);
+}));
+
+byId("quick-search").addEventListener("submit", function (event) {
+  event.preventDefault();
+  byId("filter-city").value = byId("quick-city").value;
+  byId("filter-locality").value = byId("quick-locality").value.trim();
+  byId("filter-type").value = byId("quick-type").value;
+  byId("filter-budget").value = byId("quick-budget").value;
+  byId("filter-beds").value = byId("quick-beds").value;
+  state.propertyType = byId("filter-type").value;
+  loadListings();
+  byId("discover").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.querySelectorAll("[data-locality-search]").forEach((button) => button.addEventListener("click", function () {
+  applyBrowseMode(button.dataset.localityMode || "buy");
+  byId("quick-city").value = "Hyderabad";
+  byId("filter-city").value = "Hyderabad";
+  byId("quick-locality").value = button.dataset.localitySearch;
+  byId("filter-locality").value = button.dataset.localitySearch;
+  byId("quick-type").value = state.propertyType;
+  byId("filter-type").value = state.propertyType;
+  byId("quick-budget").value = "";
+  byId("filter-budget").value = "";
+  byId("quick-beds").value = "0";
+  byId("filter-beds").value = "0";
+  byId("discover").scrollIntoView({ behavior: "smooth", block: "start" });
+  loadListings();
+}));
+
+byId("header-city").addEventListener("change", function () {
+  byId("filter-city").value = byId("header-city").value;
+  byId("quick-city").value = byId("header-city").value;
+  loadListings();
+});
+byId("quick-city").addEventListener("change", function () {
+  byId("header-city").value = byId("quick-city").value;
+});
 
 byId("natural-search").addEventListener("submit", async function (event) {
   event.preventDefault();
@@ -306,6 +467,10 @@ byId("natural-search").addEventListener("submit", async function (event) {
 
 byId("filters").addEventListener("change", function (event) {
   if (event.target.id === "filter-type") state.propertyType = event.target.value;
+  if (event.target.id === "filter-city") {
+    byId("header-city").value = byId("filter-city").value || "Hyderabad";
+    byId("quick-city").value = byId("filter-city").value || "Hyderabad";
+  }
   loadListings();
 });
 byId("filter-locality").addEventListener("input", function () { window.clearTimeout(window.localityTimer); window.localityTimer = window.setTimeout(loadListings, 250); });
@@ -313,8 +478,7 @@ byId("filter-budget").addEventListener("change", loadListings);
 byId("clear-filters").addEventListener("click", clearAllFilters);
 byId("empty-clear").addEventListener("click", clearAllFilters);
 document.querySelectorAll(".category-tab").forEach((button) => button.addEventListener("click", function () { activateCategory(button); }));
-document.querySelectorAll("[data-nav-purpose]").forEach((link) => link.addEventListener("click", function () { state.purpose = link.dataset.navPurpose; state.propertyType = ""; byId("filter-type").value = ""; document.querySelectorAll(".category-tab").forEach((tab) => tab.classList.toggle("active", (tab.dataset.purpose || "") === state.purpose && !tab.dataset.type)); loadListings(); }));
-document.querySelectorAll("[data-nav-type]").forEach((link) => link.addEventListener("click", function () { state.purpose = ""; state.propertyType = link.dataset.navType; byId("filter-type").value = state.propertyType; document.querySelectorAll(".category-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.type === state.propertyType)); loadListings(); }));
+document.querySelectorAll("[data-nav-mode]").forEach((link) => link.addEventListener("click", function () { applyBrowseMode(link.dataset.navMode); loadListings(); }));
 
 function openSellerForm() {
   if (state.backendAvailable !== true) {
@@ -391,6 +555,117 @@ function toggleAdminOpen() {
 }
 byId("admin-open").addEventListener("click", toggleAdminOpen);
 byId("admin-footer-open").addEventListener("click", toggleAdminOpen);
+
+function setCustomerAuthMode(mode) {
+  const isRegister = mode === "register";
+  byId("customer-auth-mode").value = isRegister ? "register" : "login";
+  byId("customer-auth-name-field").hidden = !isRegister;
+  byId("customer-auth-name").required = isRegister;
+  byId("customer-login-tab").setAttribute("aria-selected", String(!isRegister));
+  byId("customer-register-tab").setAttribute("aria-selected", String(isRegister));
+  byId("customer-auth-message").textContent = "";
+  byId("customer-otp-verify-message").textContent = "";
+  byId("customer-otp-request-form").hidden = false;
+  byId("customer-otp-verify-form").hidden = true;
+}
+
+function updateCustomerAuthAvailability() {
+  const enabled = state.backendAvailable === true && state.customerAuthEnabled;
+  byId("customer-otp-request-button").disabled = !enabled;
+  byId("customer-auth-submit-label").textContent = enabled ? "Continue" : "OTP not configured";
+  byId("customer-auth-readiness").textContent = state.backendAvailable === true ? state.customerAuthMessage : BACKEND_UNAVAILABLE_MESSAGE;
+}
+
+function openCustomerAuth() {
+  byId("customer-otp-request-form").reset();
+  byId("customer-otp-verify-form").reset();
+  setCustomerAuthMode("login");
+  updateCustomerAuthAvailability();
+  byId("customer-auth-dialog").showModal();
+  byId("customer-auth-phone").focus();
+}
+
+byId("customer-auth-open").addEventListener("click", openCustomerAuth);
+byId("customer-auth-footer-open").addEventListener("click", openCustomerAuth);
+document.querySelectorAll("[data-customer-auth-mode]").forEach((button) => {
+  button.addEventListener("click", () => setCustomerAuthMode(button.dataset.customerAuthMode));
+});
+
+byId("customer-otp-request-form").addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = byId("customer-auth-message");
+  const submit = form.querySelector('button[type="submit"]');
+  if (state.backendAvailable !== true) {
+    message.textContent = state.backendAvailable === false ? BACKEND_UNAVAILABLE_MESSAGE : "Connecting to the app server. Please try again in a moment.";
+    return;
+  }
+  if (!state.customerAuthEnabled) {
+    message.textContent = state.customerAuthMessage;
+    return;
+  }
+  message.textContent = "Requesting a verification code…";
+  submit.disabled = true;
+  try {
+    const phone = "+91" + byId("customer-auth-phone").value.trim();
+    const response = await fetch("/api/customer-auth/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: phone,
+        mode: byId("customer-auth-mode").value,
+        name: byId("customer-auth-name").value.trim()
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "A verification code could not be sent.");
+    form.hidden = true;
+    byId("customer-otp-verify-form").hidden = false;
+    byId("customer-otp-verify-message").textContent = data.message || "Enter the code sent to your phone.";
+    byId("customer-otp-code").focus();
+  } catch (error) {
+    message.textContent = error.message || "A verification code could not be sent.";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+byId("customer-otp-verify-form").addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const message = byId("customer-otp-verify-message");
+  const submit = event.currentTarget.querySelector('button[type="submit"]');
+  if (state.backendAvailable !== true) {
+    message.textContent = state.backendAvailable === false ? BACKEND_UNAVAILABLE_MESSAGE : "Connecting to the app server. Please try again in a moment.";
+    return;
+  }
+  if (!state.customerAuthEnabled) {
+    message.textContent = state.customerAuthMessage;
+    return;
+  }
+  message.textContent = "Verifying your code…";
+  submit.disabled = true;
+  try {
+    const response = await fetch("/api/customer-auth/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: "+91" + byId("customer-auth-phone").value.trim(),
+        code: byId("customer-otp-code").value.trim(),
+        mode: byId("customer-auth-mode").value,
+        name: byId("customer-auth-name").value.trim()
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Your phone number could not be verified.");
+    message.textContent = "Your phone is verified, but customer sessions are not enabled yet.";
+  } catch (error) {
+    message.textContent = error.message || "Your phone number could not be verified.";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+byId("customer-auth-change-phone").addEventListener("click", () => setCustomerAuthMode(byId("customer-auth-mode").value));
 
 async function restoreTeamSession() {
   try {
@@ -775,6 +1050,9 @@ async function initialize() {
     state.backendAvailable = true;
     state.aiEnabled = Boolean(config.ai_enabled);
     state.adminEnabled = Boolean(config.admin_enabled);
+    state.customerAuthEnabled = Boolean(config.customer_auth_enabled);
+    state.customerAuthMessage = config.customer_auth_message || CUSTOMER_AUTH_UNAVAILABLE_MESSAGE;
+    updateCustomerAuthAvailability();
     byId("admin-setup-note").hidden = state.adminEnabled;
     byId("admin-open").hidden = false;
     byId("admin-footer-open").hidden = false;
@@ -782,11 +1060,13 @@ async function initialize() {
     else byId("search-feedback").textContent = "Search with everyday words. AI filter extraction is optional; this demo also works without an API key.";
   } catch (error) {
     state.backendAvailable = false;
+    updateCustomerAuthAvailability();
     byId("admin-open").hidden = true;
     byId("admin-footer-open").hidden = true;
     byId("search-feedback").textContent = BACKEND_UNAVAILABLE_MESSAGE;
   }
   await loadListings();
+  await loadProjects();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 }
 

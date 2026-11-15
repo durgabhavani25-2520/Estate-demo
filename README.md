@@ -7,15 +7,23 @@ A polished, responsive property marketplace MVP for the India / INR market. It i
 ## What you can do
 
 - Browse sample listings in Bengaluru, Hyderabad, Mumbai, Pune, and Chennai.
-- Filter by city, locality, property type, sale/resale/rent, budget, bedrooms, and sort order.
+- Start searches in Hyderabad with Buy, Rent, New launch, Commercial, Plots / land, or Projects intent; browse project-linked homes and neighbourhoods from the landing page.
+- Filter by city, locality or project name, property type, sale/resale/rent, budget, bedrooms, and sort order.
+- Use the home-loan EMI calculator to estimate repayments from a principal, interest rate, and term. It is an estimate, not a lender quote.
 - Search in plain language, for example: “2 BHK in Whitefield under ₹1.5 Cr”. It uses a local keyword parser by default, and optional AI filter extraction if an OpenAI key is configured.
 - Save favourite properties in your browser and send a buyer enquiry.
 - Send a seller / agent listing enquiry for a home, commercial space, or land plot. Seller enquiries go for manual review and never publish automatically.
 - Sign in to the team workspace as an administrator or agent. Administrators manage listings, prices, sold/archived status, location highlights, and staff accounts. Agents can review and update enquiries.
 - Let customers browse without accounts. Buyer and seller enquiry forms collect mobile and WhatsApp numbers, preferred contact method, and callback availability.
+- Contact EstateBridge by phone at +91 93466 68551 or use the WhatsApp chat link, which opens a prefilled message to +91 93466 68551.
+- Offer customers a separate phone-first login/register screen while keeping Team login staff-only. Customer OTP login is provider-ready but disabled until an SMS provider is integrated; this build does not send codes or create customer sessions.
 - Use the responsive site on desktop, tablet, and mobile, or install it as a PWA.
 
 The AI only extracts structured search filters. Property results still come from the site's listing database; AI cannot invent a listing. Buyer and seller contact details are never sent to the AI provider.
+
+## Technology choices
+
+The app uses semantic HTML, plain CSS, and browser JavaScript for the responsive marketplace UI; a Python standard-library HTTP server provides the JSON API and SQLite persists listings, enquiries, and team access. There is no frontend framework or package-install step. This keeps the demo straightforward to run and deploy; a larger live marketplace would typically add managed PostgreSQL, authenticated image storage, a production identity provider, and monitoring as traffic and operational needs grow.
 
 ## Run locally
 

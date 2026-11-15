@@ -13,6 +13,7 @@ AI is intentionally not used to decide creditworthiness, eligibility, legal stat
 - Buyer enquiry: name, phone, optional email, message, and selected sample listing.
 - Seller enquiry: contact information and property details supplied in the form.
 - Agent Desk: enquiry data and lead stage, available only when the server access token is configured.
+- Customer login/register: the phone-first screen is a provider-ready interface only. SMS verification and customer sessions remain disabled until an OTP provider is integrated.
 - AI search: only the free-text property query; contact details are never included.
 
 The local demo stores favourites in the browser and enquiries in SQLite. A public service needs a privacy notice that matches actual use, consent language, security controls, a retention period, a deletion workflow, access logs, and a protected database.

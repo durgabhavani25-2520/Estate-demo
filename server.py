@@ -29,6 +29,7 @@ LISTINGS_FILE = DATA / "listings.json"
 DB_PATH = Path(os.environ.get("ESTATEBRIDGE_DB", str(INSTANCE / "estatebridge.sqlite3"))).resolve()
 DEFAULT_MODEL = "gpt-6-luna"
 OPENAI_ENDPOINT = "https://api.openai.com/v1/responses"
+CUSTOMER_OTP_UNAVAILABLE_MESSAGE = "Customer phone verification is not configured. Integrate an SMS OTP provider before using customer login or registration."
 MAX_BODY = 16_000
 VALID_PURPOSES = {"sale", "resale", "rent"}
 VALID_TYPES = {"apartment", "villa", "plot", "commercial"}
@@ -174,29 +175,31 @@ def init_database() -> None:
                 expires_at TEXT NOT NULL
             )
         """)
-        count = conn.execute("SELECT COUNT(*) AS amount FROM listings").fetchone()["amount"]
-        if count == 0:
-            raw = json.loads(LISTINGS_FILE.read_text(encoding="utf-8-sig"))
-            for item in raw:
-                conn.execute("""
-                    INSERT INTO listings (
-                        id, slug, title, city, locality, property_type, listing_type,
-                        price_inr, area_sqft, beds, baths, parking, description,
-                        features_json, image_urls_json, rera_project_number, agent_name,
-                        agent_rera_id, posted_days, featured, is_sample, venture_name, layout,
-                        location_highlights_json, status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    item["id"], item["slug"], item["title"], item["city"], item["locality"],
-                    item["property_type"], item["listing_type"], item["price_inr"], item["area_sqft"],
-                    item.get("beds", 0), item.get("baths", 0), item.get("parking", 0), item["description"],
-                    json.dumps(item.get("features", [])), json.dumps(item.get("image_urls", [])),
-                    item.get("rera_project_number", ""), item.get("agent_name", "Sample listing"),
-                    item.get("agent_rera_id", ""), item.get("posted_days", 0), int(item.get("featured", False)),
-                    int(item.get("is_sample", True)),
-                    item.get("venture_name", ""), item.get("layout", ""),
-                    json.dumps(item.get("location_highlights", [])), item.get("status", "active"),
-                ))
+        raw = json.loads(LISTINGS_FILE.read_text(encoding="utf-8-sig"))
+        for item in raw:
+            conn.execute("""
+                INSERT OR IGNORE INTO listings (
+                    id, slug, title, city, locality, property_type, listing_type,
+                    price_inr, area_sqft, beds, baths, parking, description,
+                    features_json, image_urls_json, rera_project_number, agent_name,
+                    agent_rera_id, posted_days, featured, is_sample, venture_name, layout,
+                    location_highlights_json, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                item["id"], item["slug"], item["title"], item["city"], item["locality"],
+                item["property_type"], item["listing_type"], item["price_inr"], item["area_sqft"],
+                item.get("beds", 0), item.get("baths", 0), item.get("parking", 0), item["description"],
+                json.dumps(item.get("features", [])), json.dumps(item.get("image_urls", [])),
+                item.get("rera_project_number", ""), item.get("agent_name", "Sample listing"),
+                item.get("agent_rera_id", ""), item.get("posted_days", 0), int(item.get("featured", False)),
+                int(item.get("is_sample", True)),
+                item.get("venture_name", ""), item.get("layout", ""),
+                json.dumps(item.get("location_highlights", [])), item.get("status", "active"),
+            ))
+        conn.execute(
+            "UPDATE listings SET venture_name = ? WHERE slug = ? AND is_sample = 1 AND venture_name = ''",
+            ("The Grove at Kokapet", "kokapet-new-3bhk"),
+        )
 
 
 def listing_dict(row: sqlite3.Row) -> dict:
@@ -297,6 +300,9 @@ def query_listings(params: dict[str, list[str]]) -> list[dict]:
     query = clean_text((params.get("q") or [""])[0], 120).casefold()
     purpose = clean_text((params.get("purpose") or [""])[0], 20)
     property_type = clean_text((params.get("property_type") or [""])[0], 20)
+    projects_only = (params.get("projects") or [""])[0] == "1"
+    new_launch_only = (params.get("new_launch") or [""])[0] == "1"
+    residential_only = (params.get("residential") or [""])[0] == "1"
     max_price = to_int((params.get("max_price") or [""])[0])
     min_beds = to_int((params.get("min_beds") or [""])[0], 0, 10)
     sort = clean_text((params.get("sort") or ["featured"])[0], 20)
@@ -311,16 +317,24 @@ def query_listings(params: dict[str, list[str]]) -> list[dict]:
             continue
         if locality and locality not in item["locality"].casefold():
             continue
-        if purpose and purpose in VALID_PURPOSES and item["listing_type"] != purpose:
+        if purpose == "buy" and item["listing_type"] not in {"sale", "resale"}:
+            continue
+        if purpose in VALID_PURPOSES and item["listing_type"] != purpose:
             continue
         if property_type and property_type in VALID_TYPES and item["property_type"] != property_type:
+            continue
+        if residential_only and item["property_type"] not in {"apartment", "villa"}:
+            continue
+        if projects_only and not item["venture_name"]:
+            continue
+        if new_launch_only and (item["listing_type"] != "sale" or not item["venture_name"]):
             continue
         if max_price is not None and item["price_inr"] > max_price:
             continue
         if min_beds is not None and min_beds and item["beds"] < min_beds:
             continue
         if query:
-            haystack = " ".join([item["title"], item["city"], item["locality"], item["description"], " ".join(item["features"])]).casefold()
+            haystack = " ".join([item["title"], item["city"], item["locality"], item["venture_name"], item["description"], " ".join(item["features"])]).casefold()
             words = [word for word in re.findall(r"[a-z0-9]+", query) if len(word) > 1]
             if words and not all(word in haystack for word in words):
                 continue
@@ -351,7 +365,7 @@ def parse_local_intent(text: str) -> dict:
                 city = "Bengaluru"
             break
     locality = ""
-    known_localities = ["whitefield", "sarjapur road", "kokapet", "hinjawadi", "powai", "perungudi", "baner", "shankarpally", "kondapur"]
+    known_localities = ["whitefield", "sarjapur road", "kokapet", "hinjawadi", "powai", "perungudi", "baner", "shankarpally", "kondapur", "gachibowli", "financial district"]
     for value in known_localities:
         if value in q:
             locality = value.title()
@@ -648,7 +662,12 @@ class EstateBridgeHandler(BaseHTTPRequestHandler):
         if path == "/api/config":
             admin_username = clean_text(os.environ.get("ADMIN_USERNAME"), 40, "admin").lower()
             admin_ready = len(os.environ.get("ADMIN_ACCESS_TOKEN", "").strip()) >= 12 or admin_password_record(admin_username) is not None
-            self.send_json(200, {"brand": "EstateBridge", "market": "India", "currency": "INR", "ai_enabled": bool(os.environ.get("OPENAI_API_KEY", "").strip()), "admin_enabled": admin_ready})
+            self.send_json(200, {
+                "brand": "EstateBridge", "market": "India", "currency": "INR",
+                "ai_enabled": bool(os.environ.get("OPENAI_API_KEY", "").strip()),
+                "admin_enabled": admin_ready, "customer_auth_enabled": False,
+                "customer_auth_message": CUSTOMER_OTP_UNAVAILABLE_MESSAGE,
+            })
             return
         if path == "/api/auth/me":
             staff = self.authenticated_staff()
@@ -743,6 +762,9 @@ class EstateBridgeHandler(BaseHTTPRequestHandler):
             payload = self.read_json()
         except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
             self.send_json(400, {"error": str(error) or "Could not read this form."})
+            return
+        if path in {"/api/customer-auth/otp/request", "/api/customer-auth/otp/verify"}:
+            self.send_json(503, {"error": CUSTOMER_OTP_UNAVAILABLE_MESSAGE})
             return
         if path == "/api/auth/login":
             ip = self.client_address[0] if self.client_address else "unknown"

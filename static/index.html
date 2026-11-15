@@ -4,18 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#18333b">
-  <meta name="description" content="Discover homes, resale properties and land across India. Search, compare, and send an enquiry.">
+  <meta name="description" content="Explore homes, rentals, new launches, projects, and commercial property in Hyderabad.">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
-  <title>EstateBridge — Find a place to grow</title>
+  <title>Hyderabad Real Estate — Buy, Rent & Explore Projects | EstateBridge</title>
 </head>
 <body>
   <div class="demo-ribbon"><span class="demo-dot"></span> PROPERTY MARKETPLACE · HOMES, LAND & LOCAL EXPERTISE · INDIA / INR</div>
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="EstateBridge home"><span class="brand-symbol"><i></i><i></i><i></i></span><span>estate<span>bridge</span></span></a>
-    <nav class="main-nav" aria-label="Main navigation"><a href="#discover" data-nav-purpose="sale">Buy</a><a href="#discover" data-nav-purpose="rent">Rent</a><a href="#discover" data-nav-type="plot">Land</a><button id="sell-open" class="nav-list-button" type="button">List your property <span>+</span></button></nav>
+    <div class="header-brand-group"><a class="brand" href="#top" aria-label="EstateBridge home"><span class="brand-symbol"><i></i><i></i><i></i></span><span>estate<span>bridge</span></span></a><label class="header-city-control"><span>Market</span><select id="header-city"><option>Bengaluru</option><option selected>Hyderabad</option><option>Mumbai</option><option>Pune</option><option>Chennai</option><option>Delhi NCR</option></select></label></div>
+    <nav class="main-nav" aria-label="Main navigation"><a href="#discover" data-nav-mode="buy">Buy</a><a href="#discover" data-nav-mode="rent">Rent</a><a href="#projects">Projects</a><a href="#market-insights">Insights</a><a href="#localities">Explore areas</a><a href="#contact">Contact</a></nav>
+    <button id="sell-open" class="nav-list-button" type="button">Post property <span>+</span></button>
+    <button id="customer-auth-open" class="agent-link customer-auth-button" type="button">Login / Register</button>
     <button id="admin-open" class="agent-link" type="button" hidden><span class="agent-dot"></span> Team login</button>
     <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation"><span></span><span></span></button>
   </header>
@@ -25,18 +27,28 @@
       <div class="hero-image" aria-hidden="true"></div>
       <div class="hero-shade"></div>
       <div class="hero-content">
-        <p class="eyebrow light"><span></span> FIND YOUR PLACE IN THE NEXT CHAPTER</p>
-        <h1>Good places.<br><em>Better possibilities.</em></h1>
-        <p class="hero-copy">Explore homes, resale properties, and land with a search built around what matters to you.</p>
-        <form id="natural-search" class="search-box">
-          <span class="search-icon" aria-hidden="true">⌕</span>
-          <input id="natural-query" maxlength="350" placeholder="Try “2 BHK in Whitefield under ₹1.5 Cr”" aria-label="Describe your ideal property">
-          <button type="submit">Find a place <span aria-hidden="true">→</span></button>
-        </form>
-        <div id="search-feedback" class="search-feedback" role="status" aria-live="polite"></div>
-        <div class="hero-foot"><span class="hero-line"></span><span>Curious about a place? Start with a conversation.</span></div>
+        <p class="eyebrow light"><span></span> HYDERABAD REAL ESTATE · HOMES, LAND & PROJECTS</p>
+        <h1>Find your place in <em>Hyderabad.</em></h1>
+        <p class="hero-copy">Search homes for sale or rent, discover new projects, and explore neighbourhoods across the city.</p>
+        <div class="quick-search-card">
+          <div class="quick-search-tabs" role="group" aria-label="I am looking to">
+            <button type="button" class="quick-search-tab active" data-browse-mode="buy">Buy</button>
+            <button type="button" class="quick-search-tab" data-browse-mode="rent">Rent</button>
+            <button type="button" class="quick-search-tab" data-browse-mode="new-launch">New launch</button>
+            <button type="button" class="quick-search-tab" data-browse-mode="commercial">Commercial</button>
+            <button type="button" class="quick-search-tab" data-browse-mode="plots">Plots / land</button>
+            <button type="button" class="quick-search-tab" data-browse-mode="projects">Projects</button>
+          </div>
+          <form id="quick-search" class="quick-search-form">
+            <label><span>City</span><select id="quick-city"><option>Bengaluru</option><option selected>Hyderabad</option><option>Mumbai</option><option>Pune</option><option>Chennai</option><option>Delhi NCR</option></select></label>
+            <label class="quick-locality"><span>Locality / project</span><input id="quick-locality" list="hyderabad-localities" maxlength="80" placeholder="Add a location or project"><datalist id="hyderabad-localities"><option value="Kokapet"></option><option value="Kondapur"></option><option value="Shankarpally"></option><option value="Gachibowli"></option><option value="Financial District"></option></datalist></label>
+            <label><span>Property type</span><select id="quick-type"><option value="">Any type</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="plot">Land / plot</option><option value="commercial">Commercial</option></select></label>
+            <label><span>Max budget (₹)</span><input id="quick-budget" type="number" min="0" step="100000" placeholder="Any budget"></label>
+            <label><span>Bedrooms</span><select id="quick-beds"><option value="0">Any</option><option value="1">1+ bed</option><option value="2">2+ beds</option><option value="3">3+ beds</option><option value="4">4+ beds</option></select></label>
+            <button class="quick-search-submit" type="submit">Search <span aria-hidden="true">→</span></button>
+          </form>
+        </div>
       </div>
-      <div class="hero-location"><span class="pin-icon">⌖</span><span>Demo homes across India<br><strong>Bengaluru · Hyderabad · Mumbai · Pune · Chennai</strong></span></div>
     </section>
 
     <section class="trust-row" aria-label="Marketplace notes">
@@ -46,20 +58,26 @@
       <div><span class="trust-icon">▱</span><p><strong>Demo-safe details</strong><small>All sample inventory is marked</small></p></div>
     </section>
 
+    <section class="smart-search">
+      <div><p class="eyebrow"><span></span> SEARCH IN YOUR OWN WORDS</p><p>Have something specific in mind?</p></div>
+      <div class="smart-search-field"><form id="natural-search" class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><input id="natural-query" maxlength="350" placeholder="Try “2 BHK in Kokapet under ₹2 Cr”" aria-label="Describe your ideal property"><button type="submit">Search <span aria-hidden="true">→</span></button></form><div id="search-feedback" class="search-feedback" role="status" aria-live="polite"></div></div>
+    </section>
+
     <section id="discover" class="discover-section">
       <div class="section-top">
-        <div><p class="eyebrow"><span></span> THE COLLECTION</p><h2>Find a place that<br><em>fits your life.</em></h2></div>
-        <p class="section-note">A first look across homes and land. Filter the collection, save a favourite, or ask about a property.</p>
+        <div><p class="eyebrow"><span></span> HYDERABAD PROPERTY COLLECTION</p><h2>Recommended<br><em>properties.</em></h2></div>
+        <p class="section-note">Explore sample homes, refine by locality and budget, save favourites, or ask about a property.</p>
       </div>
       <div class="category-tabs" role="group" aria-label="Property category">
-        <button class="category-tab active" data-purpose="" type="button">All properties <span id="count-all">0</span></button>
-        <button class="category-tab" data-purpose="sale" type="button">For sale</button>
-        <button class="category-tab" data-purpose="resale" type="button">Resale</button>
-        <button class="category-tab" data-purpose="rent" type="button">For rent</button>
-        <button class="category-tab" data-type="plot" type="button">Land & plots</button>
+        <button class="category-tab active" data-browse-mode="buy" type="button">Buy homes <span id="count-all">0</span></button>
+        <button class="category-tab" data-browse-mode="rent" type="button">For rent</button>
+        <button class="category-tab" data-browse-mode="new-launch" type="button">New launch</button>
+        <button class="category-tab" data-browse-mode="commercial" type="button">Commercial</button>
+        <button class="category-tab" data-browse-mode="plots" type="button">Land & plots</button>
+        <button class="category-tab" data-browse-mode="projects" type="button">Projects</button>
       </div>
       <form id="filters" class="filters-bar">
-        <label><span>City</span><select id="filter-city"><option value="">All cities</option><option>Bengaluru</option><option>Hyderabad</option><option>Mumbai</option><option>Pune</option><option>Chennai</option><option>Delhi NCR</option></select></label>
+        <label><span>City</span><select id="filter-city"><option value="">All cities</option><option>Bengaluru</option><option selected>Hyderabad</option><option>Mumbai</option><option>Pune</option><option>Chennai</option><option>Delhi NCR</option></select></label>
         <label><span>Property</span><select id="filter-type"><option value="">Any type</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="plot">Land / plot</option><option value="commercial">Commercial</option></select></label>
         <label><span>Locality</span><input id="filter-locality" maxlength="80" placeholder="e.g. Whitefield"></label>
         <label><span>Max price (₹)</span><input id="filter-budget" type="number" min="0" step="100000" placeholder="Any budget"></label>
@@ -73,6 +91,32 @@
       <p class="inventory-note">Sample properties are clearly marked. Always verify property identity, ownership, approvals, RERA details where applicable, price, and availability independently.</p>
     </section>
 
+    <section id="localities" class="locality-section">
+      <div class="locality-heading"><div><p class="eyebrow"><span></span> START WITH A PLACE</p><h2>Explore Hyderabad<br><em>by neighbourhood.</em></h2></div><p>Jump into the areas represented in our sample collection. Listings are examples, not live market inventory.</p></div>
+      <div class="locality-links">
+        <button type="button" data-locality-search="Kokapet"><span>Kokapet</span><small>New homes & apartments</small><b>Explore →</b></button>
+        <button type="button" data-locality-search="Kondapur"><span>Kondapur</span><small>Homes near everyday essentials</small><b>Explore →</b></button>
+        <button type="button" data-locality-search="Shankarpally"><span>Shankarpally</span><small>Plots & open land</small><b>Explore →</b></button>
+        <button type="button" data-locality-search="Gachibowli" data-locality-mode="rent"><span>Gachibowli</span><small>Homes & rental properties</small><b>Explore →</b></button>
+        <button type="button" data-locality-search="Financial District" data-locality-mode="commercial"><span>Financial District</span><small>Commercial spaces</small><b>Explore →</b></button>
+      </div>
+    </section>
+
+    <section id="projects" class="projects-section">
+      <div class="section-top"><div><p class="eyebrow"><span></span> NEW HOMES & DEVELOPMENTS</p><h2>Explore featured<br><em>projects.</em></h2></div><p class="section-note">Browse project-linked sample homes. Project and property details are illustrative demo content.</p></div>
+      <div id="project-grid" class="project-grid" aria-live="polite"><p class="project-loading">Loading Hyderabad projects…</p></div>
+    </section>
+
+    <section id="market-insights" class="market-insights">
+      <div class="section-top"><div><p class="eyebrow"><span></span> PLAN YOUR NEXT MOVE</p><h2>Property tools<br><em>and insights.</em></h2></div><p class="section-note">Useful starting points for comparing neighbourhoods and estimating a home loan.</p></div>
+      <div class="market-tool-grid">
+        <article class="market-tool-card market-localities"><span class="market-tool-icon">⌖</span><div><h3>Explore Hyderabad areas</h3><p>Browse the localities included in the sample collection.</p><a href="#localities">View neighbourhoods →</a></div></article>
+        <article class="market-tool-card"><span class="market-tool-icon">₹</span><div><h3>Home loan EMI calculator</h3><p>Estimate a monthly payment from your loan amount, rate, and term.</p><button id="emi-open" type="button">Calculate EMI →</button></div></article>
+        <article class="market-tool-card"><span class="market-tool-icon">▤</span><div><h3>Compare sample properties</h3><p>Filter available demo homes by price, type, bedrooms, and city.</p><a href="#discover">Browse properties →</a></div></article>
+      </div>
+      <p class="inventory-note">Any prices shown on EstateBridge are demo listing data, not verified market rates or investment advice.</p>
+    </section>
+
     <section class="sell-banner">
       <div class="sell-art" aria-hidden="true"><div class="sell-sun"></div><div class="sell-building building-back"></div><div class="sell-building building-front"></div><div class="sell-ground"></div></div>
       <div class="sell-content"><p class="eyebrow light"><span></span> FOR OWNERS & AGENTS</p><h2>Have a place<br>to <em>put on the map?</em></h2><p>Share the details. Our team will review the enquiry and help prepare your listing.</p><button id="sell-banner-open" class="button-light" type="button">Start a listing enquiry <span>→</span></button></div>
@@ -81,11 +125,43 @@
 
     <section class="how-section">
       <div class="how-title"><p class="eyebrow"><span></span> SIMPLE BY DESIGN</p><h2>From search<br>to <em>next steps.</em></h2></div>
-      <div class="how-steps"><article><span>01</span><h3>Tell us what matters</h3><p>Use the filters or describe the home, land, city, and budget you have in mind.</p></article><article><span>02</span><h3>Explore the details</h3><p>Compare sample listings, save favourites, and review property details in one place.</p></article><article><span>03</span><h3>Start a conversation</h3><p>Send an enquiry or share a property to sell. Your request appears in the protected lead desk.</p></article></div>
+      <div class="how-steps"><article><span>01</span><h3>Choose a category</h3><p>Search homes, rentals, new launches, commercial spaces, land, or projects.</p></article><article><span>02</span><h3>Compare properties</h3><p>Refine by locality, budget, property type, and bedrooms; then review the details.</p></article><article><span>03</span><h3>Enquire or post</h3><p>Contact the team about a listing or send an owner enquiry to submit your property.</p></article></div>
+    </section>
+
+    <section id="contact" class="contact-section">
+      <div class="contact-copy"><p class="eyebrow"><span></span> CONTACT ESTATEBRIDGE</p><h2>Questions about<br><em>your next move?</em></h2><p>Call or message us about a property, a buyer enquiry, or a listing you would like to share.</p></div>
+      <div class="contact-actions">
+        <a class="contact-method" href="tel:+919346668551"><span>Call our team</span><strong>+91 93466 68551</strong><small>Tap to call</small></a>
+        <a class="contact-method contact-method-whatsapp" href="https://wa.me/919346668551?text=Hello%20EstateBridge%2C%20I%20need%20help%20with%20a%20property%20in%20Hyderabad." target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>Chat with us</strong><small>Opens a WhatsApp conversation</small></a>
+      </div>
     </section>
   </main>
 
-  <footer class="site-footer"><a class="brand footer-brand" href="#top"><span class="brand-symbol"><i></i><i></i><i></i></span><span>estate<span>bridge</span></span></a><p>Find a place to grow.</p><div class="footer-links"><a href="#discover">Explore</a><button id="privacy-open" type="button">Privacy & data</button><button id="rera-open" type="button">Listing standards</button><button id="admin-footer-open" type="button" hidden>Team login</button></div><small>© 2026 EstateBridge demo · India · INR</small></footer>
+  <footer class="site-footer"><a class="brand footer-brand" href="#top"><span class="brand-symbol"><i></i><i></i><i></i></span><span>estate<span>bridge</span></span></a><p>Find a place to grow.</p><div class="footer-links"><a href="#discover">Explore</a><a href="#contact">Contact</a><button id="customer-auth-footer-open" type="button">Login / Register</button><button id="privacy-open" type="button">Privacy & data</button><button id="rera-open" type="button">Listing standards</button><button id="admin-footer-open" type="button" hidden>Team login</button></div><small>© 2026 EstateBridge demo · India · INR</small></footer>
+  <a class="whatsapp-float" href="https://wa.me/919346668551?text=Hello%20EstateBridge%2C%20I%20need%20help%20with%20a%20property%20in%20Hyderabad." target="_blank" rel="noopener noreferrer" aria-label="Chat with EstateBridge on WhatsApp"><span aria-hidden="true">↗</span> WhatsApp</a>
+
+  <dialog id="customer-auth-dialog" class="modal form-modal customer-auth-modal">
+    <button class="modal-close" type="button" data-close="customer-auth-dialog" aria-label="Close">×</button>
+    <div class="form-modal-intro"><p class="eyebrow"><span></span> YOUR ESTATEBRIDGE ACCOUNT</p><h2 id="customer-auth-title">Sign in or <em>register.</em></h2><p>Use your mobile number to access your account. Phone verification will be enabled after an SMS OTP provider is configured.</p></div>
+    <div class="customer-auth-tabs" role="tablist" aria-label="Customer account">
+      <button id="customer-login-tab" type="button" role="tab" aria-selected="true" data-customer-auth-mode="login">Log in</button>
+      <button id="customer-register-tab" type="button" role="tab" aria-selected="false" data-customer-auth-mode="register">Create account</button>
+    </div>
+    <form id="customer-otp-request-form" class="customer-auth-form">
+      <input id="customer-auth-mode" name="mode" type="hidden" value="login">
+      <label id="customer-auth-name-field" hidden>Full name<input id="customer-auth-name" name="name" maxlength="100" autocomplete="name"></label>
+      <label>Phone number<div class="customer-phone-field"><span>+91</span><input id="customer-auth-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" minlength="10" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit mobile number" required></div></label>
+      <button id="customer-otp-request-button" class="button-dark" type="submit" disabled><span id="customer-auth-submit-label">OTP not configured</span> <span>→</span></button>
+      <p id="customer-auth-message" class="form-message" role="status" aria-live="polite"></p>
+      <p id="customer-auth-readiness" class="form-hint">No OTP will be sent until an SMS provider is integrated. This provider-ready screen does not create or sign in to customer accounts yet.</p>
+    </form>
+    <form id="customer-otp-verify-form" class="customer-auth-form" hidden>
+      <label>Verification code<input id="customer-otp-code" name="code" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" required></label>
+      <button class="button-dark" type="submit">Verify and continue <span>→</span></button>
+      <p id="customer-otp-verify-message" class="form-message" role="status" aria-live="polite"></p>
+      <button id="customer-auth-change-phone" class="text-link" type="button">Use a different phone number</button>
+    </form>
+  </dialog>
 
   <dialog id="property-dialog" class="modal property-modal"><button class="modal-close" type="button" data-close="property-dialog" aria-label="Close">×</button><div id="property-detail-body" class="property-detail-body"></div><div class="inquiry-panel"><p class="eyebrow"><span></span> GET IN TOUCH</p><h3>Ask about this place.</h3><form id="buyer-form" class="lead-form"><input type="hidden" id="buyer-listing-id"><label>Your name<input name="name" required maxlength="100" autocomplete="name"></label><div class="form-grid contact-grid"><label>Mobile number<input name="phone" required maxlength="24" autocomplete="tel" placeholder="+91"></label><label>WhatsApp number<input name="whatsapp_number" required maxlength="24" autocomplete="tel" placeholder="+91"></label></div><label class="same-number"><input type="checkbox" data-copy-phone> WhatsApp uses my mobile number</label><div class="form-grid contact-grid"><label>Best way to contact you<select name="contact_preference" required><option value="either">Call or WhatsApp</option><option value="call">Phone call</option><option value="whatsapp">WhatsApp</option></select></label><label>When are you free to talk?<input name="callback_availability" required maxlength="120" placeholder="e.g. weekdays after 6 pm"></label></div><label>Email (optional)<input name="email" type="email" maxlength="160" autocomplete="email"></label><label>What would you like to know?<textarea name="message" rows="3" maxlength="1200" placeholder="Share a question or more details"></textarea></label><label class="consent"><input name="consent" type="checkbox" required><span>I agree to be contacted about this enquiry. See the <button type="button" class="inline-link" id="privacy-inline">privacy note</button>.</span></label><label class="honeypot" aria-hidden="true">Website<input name="company_website" tabindex="-1" autocomplete="off"></label><button class="button-dark" type="submit">Send enquiry <span>→</span></button><p class="form-message" id="buyer-message" role="status"></p></form></div></dialog>
 
@@ -94,6 +170,8 @@
   <dialog id="admin-dialog" class="modal admin-modal"><button class="modal-close" type="button" data-close="admin-dialog" aria-label="Close">×</button><div class="admin-header"><p class="eyebrow"><span></span> SECURE TEAM WORKSPACE</p><h2>Team <em>sign in.</em></h2><p>Admins manage properties and team access. Agents manage customer enquiries. Visitors can browse and enquire without creating an account.</p></div><p id="admin-setup-note" class="form-hint" hidden>Admin access is not configured. Set ADMIN_USERNAME and a private ADMIN_ACCESS_TOKEN (at least 12 characters) in your local .env file, then restart the server.</p><form id="admin-login" class="admin-login"><label>Team username<input id="admin-username" name="username" autocomplete="username" required></label><label>Password<input id="admin-password" name="password" type="password" autocomplete="current-password" required></label><button class="button-dark" type="submit">Sign in <span>→</span></button><p id="admin-login-message" class="form-message" role="status"></p></form><div id="admin-workspace" class="admin-workspace" hidden><p id="team-role-label" class="team-role-label"></p><div class="team-tabs"><button type="button" data-team-tab="leads" class="active">Enquiries</button><button type="button" data-team-tab="listings" data-admin-only hidden>Properties</button><button type="button" data-team-tab="staff" data-admin-only hidden>Team access</button></div><section data-team-panel="leads"><div class="admin-toolbar"><div><strong id="lead-summary">0 enquiries</strong><small>Customer contact and callback preferences</small></div><button id="export-leads" class="button-outline" type="button">Export CSV ↓</button></div><div id="lead-list" class="lead-list"></div></section><section data-team-panel="listings" hidden><div class="admin-toolbar"><div><strong>Property inventory</strong><small>Add, edit, price, publish, or mark properties sold.</small></div><button id="add-listing" class="button-dark" type="button">Add property +</button></div><div id="managed-listings" class="managed-listings"></div></section><section data-team-panel="staff" hidden><div class="admin-toolbar"><div><strong>Agent accounts</strong><small>Only the administrator can register staff accounts.</small></div></div><form id="staff-form" class="staff-form"><label>Agent username<input name="username" required minlength="3" maxlength="40" autocomplete="off"></label><label>Initial password<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label><button class="button-dark" type="submit">Register agent <span>→</span></button><p id="staff-message" class="form-message" role="status"></p></form><div id="staff-list" class="staff-list"></div></section><button id="admin-logout" class="text-link" type="button">Sign out of team workspace</button></div></dialog>
 
   <dialog id="listing-edit-dialog" class="modal form-modal"><button class="modal-close" type="button" data-close="listing-edit-dialog" aria-label="Close">×</button><div class="form-modal-intro"><p class="eyebrow"><span></span> ADMINISTRATOR · PROPERTY INVENTORY</p><h2 id="listing-form-title">Add a <em>property.</em></h2></div><form id="listing-form" class="lead-form seller-form"><input name="id" type="hidden"><div class="form-grid"><label>Property title<input name="title" maxlength="160" required></label><label>Venture / project name<input name="venture_name" maxlength="160" placeholder="e.g. Greenview Enclave"></label><label>City<input name="city" maxlength="80" required></label><label>Locality<input name="locality" maxlength="80" required></label><label>Property type<select name="property_type" required><option value="apartment">Apartment</option><option value="villa">Villa / house</option><option value="plot">Land / plot</option><option value="commercial">Commercial</option></select></label><label>Purpose<select name="listing_type" required><option value="sale">Sale</option><option value="resale">Resale</option><option value="rent">Rent</option></select></label><label>Price (₹)<input name="price_inr" type="number" min="1" required></label><label>Area (sq ft)<input name="area_sqft" type="number" min="1" required></label><label>Bedrooms<input name="beds" type="number" min="0" max="100" value="0"></label><label>Bathrooms<input name="baths" type="number" min="0" max="100" value="0"></label><label>Parking spaces<input name="parking" type="number" min="0" max="100" value="0"></label><label>Status<select name="status"><option value="active">Available</option><option value="sold">Sold</option><option value="archived">Archived</option></select></label></div><label>Layout / floor plan details<textarea name="layout" rows="2" maxlength="1000" placeholder="Floor plan, facing, configuration"></textarea></label><label>Location highlights (one per line)<textarea name="location_highlights" rows="3" placeholder="Metro station — 1.2 km&#10;School — 800 m"></textarea></label><label>Description<textarea name="description" rows="3" maxlength="2000"></textarea></label><label>Features (one per line)<textarea name="features" rows="3"></textarea></label><label>Photo links (one HTTPS URL per line)<textarea name="image_urls" rows="3"></textarea></label><div class="form-grid"><label>RERA project number<input name="rera_project_number" maxlength="100"></label><label>Agent name<input name="agent_name" maxlength="100"></label><label>Agent RERA ID<input name="agent_rera_id" maxlength="100"></label><label class="check-line"><input name="featured" type="checkbox"> Feature on home page</label></div><p id="listing-message" class="form-message" role="status"></p><button class="button-dark" type="submit">Save property <span>→</span></button></form></dialog>
+
+  <dialog id="emi-dialog" class="modal form-modal emi-modal"><button class="modal-close" type="button" data-close="emi-dialog" aria-label="Close">×</button><div class="form-modal-intro"><p class="eyebrow"><span></span> HOME LOAN TOOL</p><h2>Estimate your <em>monthly EMI.</em></h2><p>Change the loan amount, annual interest rate, or tenure to compare an illustrative repayment estimate.</p></div><form id="emi-form" class="lead-form emi-form"><label>Loan amount (₹)<input id="emi-principal" type="number" min="1" step="100000" value="10000000" required></label><div class="form-grid"><label>Annual interest rate (%)<input id="emi-rate" type="number" min="0" max="40" step="0.05" value="8.5" required></label><label>Loan tenure (years)<input id="emi-years" type="number" min="1" max="40" step="1" value="20" required></label></div><div class="emi-result" aria-live="polite"><span>Estimated monthly payment</span><strong id="emi-value">₹0</strong><small id="emi-total"></small></div><button class="button-dark" type="submit">Update estimate <span>→</span></button><p class="form-hint">Estimate only; lender fees, insurance, tax, and changing rates are not included. Confirm actual terms with your lender.</p></form></dialog>
 
   <dialog id="info-dialog" class="modal info-modal"><button class="modal-close" type="button" data-close="info-dialog" aria-label="Close">×</button><p class="eyebrow"><span></span><span id="info-kicker">INFORMATION</span></p><h2 id="info-title">About EstateBridge</h2><div id="info-copy" class="info-copy"></div></dialog>
   <dialog id="password-change-dialog" class="modal form-modal"><button class="modal-close" type="button" data-close="password-change-dialog" aria-label="Close">×</button><div class="form-modal-intro"><p class="eyebrow"><span></span> ACCOUNT SECURITY</p><h2>Change your <em>password.</em></h2><p>Choose a password with at least 12 characters. You will need to sign in again after changing it.</p></div><form id="admin-password-form" class="staff-form"><label>Current password<input name="current_password" type="password" required autocomplete="current-password"></label><label>New password<input name="new_password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label><label>Confirm new password<input name="confirm_password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label><p id="admin-password-message" class="form-message" role="status"></p><button class="button-dark" type="submit">Update password <span>→</span></button></form></dialog>
